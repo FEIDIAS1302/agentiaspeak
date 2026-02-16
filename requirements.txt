@@ -1,8 +1,8 @@
 streamlit
 requests
 deep-translator
-whisperx
 pydub
-pyaudioop
-torch
 numpy
+torch
+# whisperxのインストールエラーを防ぐため、直接gitから指定する手法
+git+https://github.com/m-bain/whisperx.git

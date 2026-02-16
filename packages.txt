@@ -1,1 +1,3 @@
 ffmpeg
+build-essential
+libsndfile1
