@@ -2,6 +2,7 @@ streamlit
 requests
 deep-translator
 whisperx
-numpy
 pydub
+pyaudioop
 torch
+numpy
