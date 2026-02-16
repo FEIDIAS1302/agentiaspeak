@@ -22,7 +22,6 @@ if "edit_list" not in st.session_state:
 st.markdown("""
     <style>
     header {visibility: hidden;}
-    .main-card { background-color: #ffffff; padding: 2rem; border-radius: 12px; border: 1px solid #e1e4e8; margin-bottom: 20px; }
     .stApp { background-color: #f8f9fa; }
     .char-pill {
         display: inline-block;
