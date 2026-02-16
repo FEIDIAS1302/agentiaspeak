@@ -46,30 +46,38 @@ def get_whisperx_resources(lang_code):
 def align_audio_with_whisperx(audio_bytes, text, lang_code):
     model, device = get_whisperx_resources(lang_code)
     
-    # 1. 音声読み込み
-    audio_stream = io.BytesIO(audio_bytes)
-    audio_np = whisperx.load_audio(audio_stream)
+    # --- 修正ポイント：BytesIOではなく物理ファイルを経由させる ---
+    temp_audio_path = f"temp_align_{int(time.time())}.wav"
+    with open(temp_audio_path, "wb") as f:
+        f.write(audio_bytes)
     
-    # 2. トランスクリプト（アライメント用のベースを作成）
-    # Fish Audioで生成した正解テキストをヒントとして渡す
-    result = model.transcribe(audio_np, batch_size=1, language=lang_code)
+    try:
+        # whisperx.load_audio にファイルパス（文字列）を渡す
+        audio_np = whisperx.load_audio(temp_audio_path)
+        
+        # 2. トランスクリプト
+        result = model.transcribe(audio_np, batch_size=1, language=lang_code)
+        
+        # 3. アライメント実行
+        model_a, metadata = whisperx.load_align_model(language_code=lang_code, device=device)
+        result = whisperx.align(result["segments"], model_a, metadata, audio_np, device, return_char_alignments=True)
+        
+        char_data = []
+        for segment in result["segments"]:
+            if "chars" in segment:
+                for char_info in segment["chars"]:
+                    if "start" in char_info:
+                        char_data.append({
+                            "char": char_info["char"],
+                            "start": char_info["start"],
+                            "end": char_info["end"]
+                        })
+        return char_data
     
-    # 3. アライメント実行
-    model_a, metadata = whisperx.load_align_model(language_code=lang_code, device=device)
-    result = whisperx.align(result["segments"], model_a, metadata, audio_np, device, return_char_alignments=True)
-    
-    # 文字単位のタイムスタンプ抽出
-    char_data = []
-    for segment in result["segments"]:
-        if "chars" in segment:
-            for char_info in segment["chars"]:
-                if "start" in char_info:
-                    char_data.append({
-                        "char": char_info["char"],
-                        "start": char_info["start"],
-                        "end": char_info["end"]
-                    })
-    return char_data
+    finally:
+        # 使い終わったら確実に削除
+        if os.path.exists(temp_audio_path):
+            os.remove(temp_audio_path)
 
 # --- メインロジック ---
 col_left, col_right = st.columns([2, 1])
